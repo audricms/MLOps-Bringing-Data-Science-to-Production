@@ -64,11 +64,11 @@ def select_params_bic(
     y_arr = np.asarray(y, dtype=float)
     n = len(y_arr)
 
-    beta_ref = compute_penalty_beta(y_arr, loss if loss != "l1" else "l2")
+    beta_ref = compute_penalty_beta(y=y_arr, loss=loss if loss != "l1" else "l2")
     if loss == "huber":
-        k_ref = compute_loss_bound_k(y_arr, "huber")
+        k_ref = compute_loss_bound_k(y=y_arr, loss="huber")
     elif loss == "biweight":
-        k_ref = compute_loss_bound_k(y_arr, "biweight")
+        k_ref = compute_loss_bound_k(y=y_arr, loss="biweight")
     else:
         k_ref = None
 
@@ -177,24 +177,24 @@ def _run_with_params(
             raise ValueError("k_value is required for huber loss.")
 
         def gamma_builder(y_t: float, t: int):
-            return gamma_builder_huber(y_t, k_value, t)
+            return gamma_builder_huber(y=y_t, k_value=k_value, tau_for_new=t)
 
     elif loss == "biweight":
         if k_value is None:
             raise ValueError("k_value is required for biweight loss.")
 
         def gamma_builder(y_t: float, t: int):
-            return gamma_builder_biweight(y_t, k_value, t)
+            return gamma_builder_biweight(y=y_t, k_value=k_value, tau_for_new=t)
 
     elif loss == "l2":
 
         def gamma_builder(y_t: float, t: int):
-            return gamma_builder_l2(y_t, t)
+            return gamma_builder_l2(y=y_t, tau_for_new=t)
 
     else:
 
         def gamma_builder(y_t: float, t: int):
-            return gamma_builder_l1(y_t, t)
+            return gamma_builder_l1(y=y_t, tau_for_new=t)
 
-    cp_tau, qt_vals, _ = rfpop_algorithm1_main(y_list, gamma_builder, beta)
+    cp_tau, qt_vals, _ = rfpop_algorithm1_main(y=y_list, gamma_builder=gamma_builder, beta=beta)
     return cp_tau, qt_vals

@@ -1,6 +1,10 @@
 import numpy as np
 
-from rfpop.core import extract_changepoints_backtrack, gamma_builder_l2, rfpop_algorithm1_main
+from rfpop.core import (
+    extract_changepoints_backtrack,
+    gamma_builder_l2,
+    rfpop_algorithm1_main,
+)
 
 
 def test_rfpop_l2_smoke_runs():

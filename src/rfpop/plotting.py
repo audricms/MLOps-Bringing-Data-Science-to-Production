@@ -6,9 +6,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from .core import get_segments_from_cp_tau, rfpop_algorithm1_main
+from .core import (
+    gamma_builder_biweight,
+    gamma_builder_huber,
+    gamma_builder_l2,
+    get_segments_from_cp_tau,
+    rfpop_algorithm1_main,
+)
 from .tuning import compute_loss_bound_k, compute_penalty_beta
-from .core import gamma_builder_biweight, gamma_builder_huber, gamma_builder_l2
 
 LossName = Literal["huber", "biweight", "l2"]
 
@@ -25,33 +30,35 @@ def plot_segments(
     y_arr = np.asarray(y, dtype=float)
 
     if beta is None:
-        beta = compute_penalty_beta(y_arr, loss)
+        beta = compute_penalty_beta(y=y_arr, loss=loss)
     if loss == "huber" and k_value is None:
-        k_value = compute_loss_bound_k(y_arr, "huber")
+        k_value = compute_loss_bound_k(y=y_arr, loss="huber")
     if loss == "biweight" and k_value is None:
-        k_value = compute_loss_bound_k(y_arr, "biweight")
+        k_value = compute_loss_bound_k(y=y_arr, loss="biweight")
 
     if loss == "huber":
         if k_value is None:
             raise ValueError("k_value is required for huber loss.")
 
         def gamma_builder(y_t: float, t: int):
-            return gamma_builder_huber(y_t, k_value, t)
+            return gamma_builder_huber(y=y_t, k_value=k_value, tau_for_new=t)
 
     elif loss == "biweight":
         if k_value is None:
             raise ValueError("k_value is required for biweight loss.")
 
         def gamma_builder(y_t: float, t: int):
-            return gamma_builder_biweight(y_t, k_value, t)
+            return gamma_builder_biweight(y=y_t, k_value=k_value, tau_for_new=t)
 
     else:
 
         def gamma_builder(y_t: float, t: int):
-            return gamma_builder_l2(y_t, t)
+            return gamma_builder_l2(y=y_t, tau_for_new=t)
 
-    cp_tau, _, _ = rfpop_algorithm1_main(list(y_arr), gamma_builder, float(beta))
-    segments = get_segments_from_cp_tau(cp_tau, y_arr)
+    cp_tau, _, _ = rfpop_algorithm1_main(
+        y=list(y_arr), gamma_builder=gamma_builder, beta=float(beta)
+    )
+    segments = get_segments_from_cp_tau(cp_tau=cp_tau, y=y_arr)
 
     x_values = np.arange(len(y_arr)) if x is None else np.asarray(x)
 
@@ -101,12 +108,12 @@ def plot_segments_from_dataframe(
     if date_filter_start is not None:
         series = series[series.index > date_filter_start]
 
-    beta = compute_penalty_beta(series.to_numpy(), loss) * beta_scale
+    beta = compute_penalty_beta(y=series.to_numpy(), loss=loss) * beta_scale
     k_value = None
     if loss == "huber":
-        k_value = compute_loss_bound_k(series.to_numpy(), "huber")
+        k_value = compute_loss_bound_k(y=series.to_numpy(), loss="huber")
     if loss == "biweight":
-        k_value = compute_loss_bound_k(series.to_numpy(), "biweight")
+        k_value = compute_loss_bound_k(y=series.to_numpy(), loss="biweight")
 
     return plot_segments(
         y=series.to_numpy(),

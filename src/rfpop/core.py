@@ -1,3 +1,5 @@
+# pylint: disable=non-keyword-args
+
 from __future__ import annotations
 
 import math
@@ -130,14 +132,16 @@ def rfpop_algorithm1_main(
     qt_vals = [0.0] * n
 
     for t_idx in range(n):
-        gamma_pcs = gamma_builder(float(y_arr[t_idx]), t_idx)
-        qt_pcs = rfpop_algorithm2_add_qstar_and_gamma(qstar, gamma_pcs)
+        gamma_pcs = gamma_builder(y_t=float(y_arr[t_idx]), t=t_idx)
+        qt_pcs = rfpop_algorithm2_add_qstar_and_gamma(qstar_pieces=qstar, gamma_pieces=gamma_pcs)
 
         qt_val, tau_t = rfpop_algorithm3_min_over_theta(qt_pcs)
         cp_tau[t_idx] = tau_t
         qt_vals[t_idx] = qt_val
 
-        qstar = rfpop_algorithm4_prune_compare_to_constant(qt_pcs, qt_val, beta, t_idx)
+        qstar = rfpop_algorithm4_prune_compare_to_constant(
+            qt_pieces=qt_pcs, qt_val=qt_val, beta=beta, t_index_for_new=t_idx
+        )
 
     return cp_tau, qt_vals, qstar
 
