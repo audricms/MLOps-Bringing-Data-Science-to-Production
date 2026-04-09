@@ -29,7 +29,8 @@ repos:
     hooks:
       - id: custom-keyword-args
         name: Custom Keyword Argument Rule
-        language: system
+        language: python
+        additional_dependencies: ['pylint']
         pass_filenames: false
         entry: bash -c 'PYTHONPATH=. pylint . --ignore=.venv --load-plugins=custom_rule --disable=all --enable=non-keyword-args --score=n'
   - repo: https://github.com/jendrikseipp/vulture

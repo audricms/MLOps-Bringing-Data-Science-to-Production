@@ -26,3 +26,53 @@ matplotlib
 
 statsmodels 
 
+## Production-Oriented Package
+
+The repository now includes a minimal package in `src/rfpop` that keeps only the parts identified as production-relevant:
+
+- Core RFPOP algorithm and robust loss builders
+- Parameter selection with BIC-based search and elbow-based search
+- Segment plotting utility for detected changepoints
+
+Cross-validation has intentionally not been included in this production path because it was unstable during project experiments.
+
+### Project Structure
+
+- `src/rfpop/core.py`: core RFPOP dynamic programming implementation
+- `src/rfpop/tuning.py`: penalty and K calibration, BIC and elbow parameter selection
+- `src/rfpop/plotting.py`: plotting utilities for changepoints and segment means
+- `tests/`: smoke tests for core execution and tuning flow
+
+### Quick Start
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Run tests:
+
+```bash
+pytest
+```
+
+Example usage:
+
+```python
+import numpy as np
+from rfpop import plot_segments, select_params_elbow
+
+y = np.array([0.1, 0.2, 0.2, 4.9, 5.0, 5.1, 0.3, 0.2])
+
+search = select_params_elbow(y, loss="biweight")
+best = search["best"]
+
+fig, ax, cps = plot_segments(
+	y,
+	loss="biweight",
+	beta=best["beta"],
+	k_value=best["k"],
+)
+```
+
