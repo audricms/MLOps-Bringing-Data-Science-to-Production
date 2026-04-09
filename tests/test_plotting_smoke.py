@@ -4,7 +4,6 @@ import pandas as pd
 
 from rfpop.plotting import plot_segments_from_dataframe
 
-
 matplotlib.use("Agg")
 
 
