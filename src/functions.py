@@ -1,11 +1,8 @@
 import logging
 from typing import Literal, Optional
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from scipy import integrate
-from scipy.stats import norm
 from statsmodels import robust
 from tqdm import tqdm
 
@@ -16,6 +13,12 @@ from src.utils.gamma_builders import (
     gamma_builder_L2,
 )
 from src.utils.rfpop_algorithms import rfpop_algorithm
+from src.utils.utils import compute_loss_bound_K, compute_penalty_beta
+from src.utils.vizualization import (
+    plot_most_recent_changepoint,
+    plot_segments,
+    plot_sensitivity_tobeta,
+)
 
 
 def generate_scenarios():
@@ -111,56 +114,6 @@ def generate_scenarios():
         "Scenario 5": sig5,
     }
     return dic1, dic2
-
-
-def biweight_phi(z, K_std):
-    return 2 * z if abs(z) <= K_std else 0.0
-
-
-def huber_phi(z, K_std):
-    return 2 * z if abs(z) <= K_std else 2 * K_std * np.sign(z)
-
-
-def compute_penalty_beta(y, loss):
-    ys = pd.Series(y)
-    sigma = robust.mad(ys.diff().dropna()) / np.sqrt(2)
-    n = len(y)
-    # return 2 * sigma**2 * np.log(n)
-
-    if loss == "l2":
-        return 2 * sigma**2 * np.log(n)
-
-    elif loss == "biweight":
-        K_std = 3.0  # K / sigma
-        E_phi2, _ = integrate.quad(
-            lambda z: (biweight_phi(z=z, K_std=K_std) ** 2) * norm.pdf(z),
-            -np.inf,
-            np.inf,
-        )
-        return 2 * sigma**2 * np.log(n) * E_phi2
-
-    elif loss == "huber":
-        K_std = 1.345
-        E_phi2, _ = integrate.quad(
-            lambda z: (huber_phi(z=z, K_std=K_std) ** 2) * norm.pdf(z),
-            -np.inf,
-            np.inf,
-        )
-        return 2 * sigma**2 * np.log(n) * E_phi2
-
-    elif loss == "l1":
-        return np.log(n)
-
-    # #function to compute parameter K
-
-
-def compute_loss_bound_K(y, loss: Literal["huber", "biweight"]):
-    ys = pd.Series(y)
-    mad = robust.mad(ys.diff().dropna()) / np.sqrt(2)
-    if loss == "biweight":
-        return 3 * mad
-    elif loss == "huber":
-        return 1.345 * mad
 
 
 # =============================================================================
@@ -404,154 +357,6 @@ def get_segments_from_cp_tau(cp_tau, y):
     return segments
 
 
-def plot_sensitivity_tobeta(
-    df, name, scaling_list=[1, 5, 10, 50, 100, 500, 1000, 5000, 10000, 50000]
-):
-    y = df[name].dropna()
-    y = y[y.index > "2000"]
-
-    _, axes = plt.subplots(1, 3, figsize=(15, 5))
-    axes = axes.flatten()
-
-    for i, loss in tqdm(enumerate(["huber", "biweight", "l2"])):
-
-        beta = compute_penalty_beta(y=y, loss=loss)
-        K = compute_loss_bound_K(y=y, loss=loss)
-
-        list_scaling = np.array(scaling_list) * beta
-        nb_changepoints = []
-
-        for scaling in list_scaling:
-            if loss == "huber":
-                cp_tau, _, _ = rfpop_algorithm(
-                    y=y,
-                    gamma_builder=(
-                        lambda y_t, t: gamma_builder_huber(y=y_t, K=K, tau_for_new=t)
-                    ),
-                    beta=scaling,
-                )
-            elif loss == "biweight":
-                cp_tau, _, _ = rfpop_algorithm(
-                    y=y,
-                    gamma_builder=(
-                        lambda y_t, t: gamma_builder_biweight(y=y_t, K=K, tau_for_new=t)
-                    ),
-                    beta=scaling,
-                )
-            elif loss == "l2":
-                cp_tau, _, _ = rfpop_algorithm(
-                    y=y,
-                    gamma_builder=(
-                        lambda y_t, t: gamma_builder_L2(y=y_t, tau_for_new=t)
-                    ),
-                    beta=scaling,
-                )
-
-            nb_changepoints.append(len(set(cp_tau)))
-
-        ax = axes[i]
-        ax.plot(scaling_list, nb_changepoints)
-        ax.set_xscale("log")
-        ax.set_yscale("log")
-        ax.set_xlabel("beta scaling factor (logscale)")
-        ax.set_ylabel("number of detected changepoints (logscale)")
-        ax.set_title(f"{name} - {loss} loss: number of changepoints detected")
-
-    plt.tight_layout()
-    plt.show()
-
-
-def plot_segments(df, name, scaling_huber, scaling_biweight, scaling_l2):
-
-    y = df[name].dropna()
-    y = y[y.index > "2000"]
-
-    _, axes = plt.subplots(1, 3, figsize=(15, 5))
-    axes = axes.flatten()
-
-    for i, loss in tqdm(enumerate(["huber", "biweight", "l2"])):
-
-        beta = compute_penalty_beta(y=y, loss=loss)
-        K = compute_loss_bound_K(y=y, loss=loss)
-
-        if loss == "huber":
-            cp_tau, _, _ = rfpop_algorithm(
-                y=y,
-                gamma_builder=(
-                    lambda y_t, t: gamma_builder_huber(y=y_t, K=K, tau_for_new=t)
-                ),
-                beta=beta * scaling_huber,
-            )
-        elif loss == "biweight":
-            cp_tau, _, _ = rfpop_algorithm(
-                y=y,
-                gamma_builder=(
-                    lambda y_t, t: gamma_builder_biweight(y=y_t, K=K, tau_for_new=t)
-                ),
-                beta=beta * scaling_biweight,
-            )
-        elif loss == "l2":
-            cp_tau, _, _ = rfpop_algorithm(
-                y=y,
-                gamma_builder=(lambda y_t, t: gamma_builder_L2(y=y_t, tau_for_new=t)),
-                beta=beta * scaling_l2,
-            )
-
-        ax = axes[i]
-        ax.plot(y, ".", markersize=2)
-        t = len(y) - 1
-        segments = []
-
-        while t > 0:
-            # Le début du segment actuel est indiqué par cp_tau[t]
-            t_prev = int(cp_tau[t])
-            # On enregistre le segment (start_index, end_index)
-            segments.append((t_prev, t))
-            # On recule
-            t = t_prev
-
-        segments.reverse()  # On remet dans l'ordre chronologique
-
-        # 3. Calcul de la moyenne de chaque segment
-        for start_idx, end_idx in segments:
-
-            segment_data = y.iloc[start_idx : end_idx + 1]
-            seg_mean = segment_data.mean()
-
-            # Récupération des dates pour l'axe X
-            date_start = y.index[start_idx]
-            date_end = y.index[end_idx]  # La date du dernier point du segment
-
-            ax.plot(
-                [date_start, date_end],
-                [seg_mean, seg_mean],
-                color="black",
-                linewidth=2,
-                label="Mean on each segment" if start_idx == 0 else "",
-            )
-
-            if end_idx < len(y) - 1:
-                ax.axvline(x=date_end, color="r", linestyle="--", alpha=0.5)
-
-        if loss == "l2":
-            ax.set_title(f"{name} - {loss} loss\nbeta = {round(beta * scaling_l2, 1)}")
-        elif loss == "huber":
-            ax.set_title(
-                f"{name} - {loss} loss\nK = {round(K, 1)} | beta = {round(beta * scaling_huber, 1)}"
-            )
-        elif loss == "biweight":
-            ax.set_title(
-                f"{name} - {loss} loss\nK = {round(K, 1)} | beta = {round(beta * scaling_biweight, 1)}"
-            )
-
-        handles, labels = ax.get_legend_handles_labels()
-        by_label = dict(zip(labels, handles))
-        ax.legend(by_label.values(), by_label.keys())
-
-    plt.tight_layout()
-    plt.show()
-
-
 def online_most_recent_changepoint(
     y,
     loss: str = "biweight",
@@ -628,45 +433,6 @@ def online_most_recent_changepoint(
         "all_changepoints": all_changepoints,
         "params": {"beta": beta, "K": K, "loss": loss},
     }
-
-
-def plot_most_recent_changepoint(online_result, true_changepoints=None, title=""):
-    """
-    Plot comme dans le papier: Most Recent Changepoint vs Time
-    """
-    t_vals = online_result["t_values"]
-    recent_cp = online_result["most_recent_cp"]
-    recent_cp = np.maximum.accumulate(recent_cp)
-
-    _, ax = plt.subplots(figsize=(12, 6))
-
-    # Plot step function du most recent changepoint
-    ax.step(
-        t_vals,
-        recent_cp,
-        where="post",
-        linewidth=2,
-        color="black",
-        label="Estimated most recent CP",
-    )
-
-    # Si on a les vrais changepoints, les afficher en lignes horizontales rouges
-    if true_changepoints is not None:
-        for cp in true_changepoints:
-            ax.axhline(y=cp, color="red", linestyle="--", alpha=0.7, linewidth=1)
-        ax.plot([], [], color="red", linestyle="--", label="True changepoints")
-
-    ax.set_xlabel("Time (t)", fontsize=12)
-    ax.set_ylabel("Estimated Most Recent Changepoint", fontsize=12)
-    ax.set_title(
-        f'{title}\nOnline Analysis - {online_result["params"]["loss"].upper()} loss',
-        fontsize=14,
-    )
-    ax.legend(loc="upper left")
-    ax.grid(True, alpha=0.3)
-
-    plt.tight_layout()
-    plt.show()
 
 
 if __name__ == "__main__":
