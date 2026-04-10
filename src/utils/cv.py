@@ -15,6 +15,40 @@ from src.utils.rfpop_algorithms import rfpop_algorithm
 from src.utils.utils import compute_loss_bound_K, compute_penalty_beta
 
 
+def _find_elbow_point(results):
+    """Find the 'elbow' point in a grid search results list.
+
+    The function implements the heuristic used in the original code: it looks
+    for the first stable region (two consecutive grid points with equal
+    number of changepoints) where the number of changepoints is at most half
+    of the observed maximum. Several fallbacks are used if no such region is
+    found.
+    """
+    sorted_results = sorted(results, key=lambda x: x["beta"])
+    n_cps = [r["n_changepoints"] for r in sorted_results]
+
+    if not n_cps:
+        return results[0]
+
+    max_ncp = max(n_cps)
+    threshold = max_ncp / 2
+
+    for i in range(len(n_cps) - 1):
+        n_cp = n_cps[i]
+        if n_cp > 0 and n_cp <= threshold and n_cps[i + 1] == n_cp:
+            return sorted_results[i]
+
+    for i in range(len(n_cps) - 1):
+        if n_cps[i] > 0 and n_cps[i + 1] == n_cps[i]:
+            return sorted_results[i]
+
+    for i, r in enumerate(sorted_results):
+        if r["n_changepoints"] > 0:
+            return r
+
+    return sorted_results[0]
+
+
 def cross_validate_rfpop(
     y: np.ndarray,
     loss: Literal["huber", "biweight", "l2", "l1"] = "biweight",
@@ -166,37 +200,3 @@ def cross_validate_rfpop(
         "loss": loss,
         "criterion": criterion,
     }
-
-
-def _find_elbow_point(results):
-    """Find the 'elbow' point in a grid search results list.
-
-    The function implements the heuristic used in the original code: it looks
-    for the first stable region (two consecutive grid points with equal
-    number of changepoints) where the number of changepoints is at most half
-    of the observed maximum. Several fallbacks are used if no such region is
-    found.
-    """
-    sorted_results = sorted(results, key=lambda x: x["beta"])
-    n_cps = [r["n_changepoints"] for r in sorted_results]
-
-    if not n_cps:
-        return results[0]
-
-    max_ncp = max(n_cps)
-    threshold = max_ncp / 2
-
-    for i in range(len(n_cps) - 1):
-        n_cp = n_cps[i]
-        if n_cp > 0 and n_cp <= threshold and n_cps[i + 1] == n_cp:
-            return sorted_results[i]
-
-    for i in range(len(n_cps) - 1):
-        if n_cps[i] > 0 and n_cps[i + 1] == n_cps[i]:
-            return sorted_results[i]
-
-    for i, r in enumerate(sorted_results):
-        if r["n_changepoints"] > 0:
-            return r
-
-    return sorted_results[0]
