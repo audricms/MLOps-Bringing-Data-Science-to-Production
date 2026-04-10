@@ -226,3 +226,8 @@ def get_segments_from_cp_tau(cp_tau, y):
 
     segments.reverse()
     return segments
+
+
+if __name__ == "main":
+    get_segments_from_cp_tau(cp_tau=[1, 1], y=None)
+    extract_changepoints_backtrack(cp_tau=[1, 1])

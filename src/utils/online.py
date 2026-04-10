@@ -109,6 +109,6 @@ def online_most_recent_changepoint(
 
 if __name__ == "__main__":
     # Run a quick test with dummy data to ensure the function executes without error
-    result = online_most_recent_changepoint(
+    _ = online_most_recent_changepoint(
         y=np.random.randn(200), loss="huber", step=20, min_obs=50
     )
