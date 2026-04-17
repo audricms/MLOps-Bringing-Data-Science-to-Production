@@ -1,0 +1,22 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - deployment.yaml
+  - service.yaml
+  - ingress.yml
+
+namespace: user-asicard
+
+patches:
+  - patch: |-
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: rfpop-ingress
+      spec:
+        tls:
+          - hosts:
+              - rfpop-change-points-asicard.lab.sspcloud.fr
+        rules:
+          - host: rfpop-change-points-asicard.lab.sspcloud.fr
