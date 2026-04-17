@@ -60,7 +60,7 @@ st.markdown("---")  # Ligne horizontale pour séparer l'introduction de l'outil
 
 DATA_DIR = "data"
 PUBLIC_DATA_URL = os.getenv(
-    "TOY_DATA_BASE_URL", "https://minio.lab.sspcloud.fr/asicard/MPPDS - Projet"
+    "PUBLIC_DATA_URL", "https://minio.lab.sspcloud.fr/asicard/MPPDS - Projet"
 )
 
 

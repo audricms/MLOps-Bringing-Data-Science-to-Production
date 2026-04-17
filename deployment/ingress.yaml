@@ -2,7 +2,6 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: rfpop-ingress
-  namespace: user-asicard
   annotations:
     nginx.ingress.kubernetes.io/enable-cors: "true"
     nginx.ingress.kubernetes.io/cors-allow-origin: "*"
@@ -13,10 +12,10 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - rfpop-change-points.lab.sspcloud.fr
+        - PLACEHOLDER_URL
       secretName: rfpop-change-points-tls
   rules:
-    - host: rfpop-change-points.lab.sspcloud.fr
+    - host: PLACEHOLDER_URL
       http:
         paths:
           - path: /

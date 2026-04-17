@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: rfpop-deployment
-  namespace: user-asicard
   labels:
     app: rfpop-app
 spec:
@@ -29,8 +28,8 @@ spec:
               cpu: "500m"
               memory: "1Gi"
           env:
-            - name: TOY_DATA_BASE_URL
-              value: "https://minio.lab.sspcloud.fr/asicard/MPPDS - Projet"
+            - name: PUBLIC_DATA_URL
+              value: "https://minio.lab.sspcloud.fr/asicard/MPPDS%20-%20Projet"
           readinessProbe:
             httpGet:
               path: /_stcore/health
