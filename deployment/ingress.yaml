@@ -3,19 +3,24 @@ kind: Ingress
 metadata:
   name: rfpop-ingress
   annotations:
+    # Switch to onyxia to match the working cluster configuration
+    kubernetes.io/ingress.class: onyxia
     nginx.ingress.kubernetes.io/enable-cors: "true"
     nginx.ingress.kubernetes.io/cors-allow-origin: "*"
     nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
     nginx.ingress.kubernetes.io/cors-allow-headers: "Authorization, Content-Type"
-    nginx.ingress.kubernetes.io/cors-allow-credentials: "false"
+    nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/websocket-services: "rfpop-service"
 spec:
-  ingressClassName: nginx
+  # Updated class name
+  ingressClassName: onyxia
   tls:
     - hosts:
-        - PLACEHOLDER_URL
-      secretName: rfpop-change-points-tls
+        - REPLACE_ME_WITH_KUSTOMIZE
   rules:
-    - host: PLACEHOLDER_URL
+    - host: REPLACE_ME_WITH_KUSTOMIZE
       http:
         paths:
           - path: /
