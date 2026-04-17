@@ -14,6 +14,7 @@ spec:
   tls:
     - hosts:
         - rfpop-change-points.lab.sspcloud.fr
+      secretName: rfpop-change-points-tls
   rules:
     - host: rfpop-change-points.lab.sspcloud.fr
       http:
