@@ -155,7 +155,7 @@ if df is not None:
                         df, name=col_name, loss=loss, progress_bar=bar
                     )
                     st.session_state.elbow_fig = fig_elbow
-                    st.session_state.elbow_done = True
+                    st.session_state.elbow_done = True  # pylint: disable=unused-variable
                 except Exception as e:
                     st.error(f"Error when generating the elbow plot : {e}")
                     st.stop()
