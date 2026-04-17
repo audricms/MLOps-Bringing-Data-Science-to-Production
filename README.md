@@ -1,83 +1,171 @@
-# Changepoint-Detection-in-the-Presence-of-Outliers
+# Changepoint Detection In The Presence Of Outliers
 
-This repository contains a Machine Learning for Time Series project as part of the MVA Master. The project focuses on the R-FPOP algorithm, demonstrating how bounded loss functions can accurately detect structural changes in time series data while remaining robust to extreme outliers.
+This repository contains an implementation of the R-FPOP changepoint detection approach for time series with outliers, with an interactive Streamlit app to explore behavior across losses and hyperparameters.
 
-## For Developers
+The project is based on:
+Fearnhead, P., & Rigaill, G. (2019). Changepoint Detection in the Presence of Outliers. Journal of the American Statistical Association, 114(525), 169-183.
 
-## Dependencies
+## About This Project
 
-To isolate the project dependencies, it is recommended to use a virtual environment.
-- To create the virtual environment: `python -m venv venv`
-- To activate it: `source venv/bin/activate`
-- To install the required dependencies: `pip install -r requirements.txt`
+This project is part of the **"Mise en Production des Projets de Data Science"** (Putting Data Science Projects into Production) course at ENSAE in 2026, taught by [Lino Galiana](https://github.com/linogaliana) and Romain Avouac.
+
+For more information about the course, visit: https://ensae-reproductibilite.github.io
+
+## What This Project Includes
+
+- Robust changepoint detection algorithms in Python (`src/`)
+- A Streamlit app (`app.py`) to test the algorithm interactively
+- Toy datasets in `data/`
+- Docker image support for local and cloud usage
+- Kubernetes manifests in `deployment/` for cluster deployment
+
+## Repository Layout
+
+- `app.py`: Streamlit application entrypoint
+- `src/`: core algorithm, losses, model selection, and visualization
+- `data/`: built-in CSV examples used by the app
+- `deployment/`: Kubernetes Deployment, Service, and Ingress manifests
+- `scripts/run_docker.sh`: build and run Docker image locally
+- `scripts/run_deployment.sh`: deploy to Kubernetes and port-forward locally
+
+## Quick Start For Developers
+
+### Prerequisites
+
+- Python 3.x
+- `pip`
+- Optional: Docker
+- Optional: `kubectl` with a configured cluster context
+
+### Local Setup
+
+```bash
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+### Run The App Locally
+
+```bash
+streamlit run app.py --server.address=0.0.0.0 --server.port=8501
+```
+
+Open: `http://localhost:8501`
 
 ## Run With Docker
 
-- Build the image:
-	- `docker build -t rfpop-streamlit-app .`
-- Run the container:
-	- `docker run --rm -p 8501:8501 rfpop-streamlit-app`
-- Open the app:
-	- `http://localhost:8501`
+### Option 1: Build Locally
 
-By default, container logs display `http://localhost:8501`.
-If you map a different host port, open that mapped port in your browser.
+```bash
+docker build -t rfpop-streamlit-app .
+docker run --rm -p 8501:8501 rfpop-streamlit-app
+```
 
-### Helper Script For Correct URL Display
+### Option 2: Use Helper Script
 
-Use the helper script to build and run the container while automatically setting
-the Streamlit displayed URL to your chosen host port.
+```bash
+chmod +x scripts/run_docker.sh
+scripts/run_docker.sh
+```
 
-- Make it executable once:
-	- `chmod +x scripts/run_docker.sh`
-- Run on default port `8501`:
-	- `scripts/run_docker.sh`
-- Run on a custom port (example `8504`):
-	- `scripts/run_docker.sh 8504`
+Custom host port example:
 
-## Toy Data From SSPCloud S3 (Public MinIO)
+```bash
+scripts/run_docker.sh 8504
+```
 
-The app can load built-in toy CSV examples directly from public MinIO storage.
+### Option 3: Pull From Docker Hub
 
-- Default base URL:
-	- `https://minio.lab.sspcloud.fr/asicard/MPPDS - Projet`
-- The app uses these toy filenames:
-	- `data example 1.csv`
-	- `data example 2.csv`
-	- `data example 3.csv`
-	- `data example 4.csv`
-- If remote loading fails, the app falls back to local files in `data/` when available.
+```bash
+docker pull audricms/r-fpop-change-points-detection:latest
+docker run --rm -p 8501:8501 audricms/r-fpop-change-points-detection:latest
+```
 
-You can override the default base URL with:
-- `TOY_DATA_BASE_URL`
+On Apple Silicon, if needed:
 
-### Pre-commit
+```bash
+docker run --platform linux/amd64 --rm -p 8501:8501 audricms/r-fpop-change-points-detection:latest
+```
 
-Pre-commit automatically formats your code before each commit, ensuring that all developers follow the same formatting rules. To install it:
-- Install Pre-commit: `pip install pre-commit`
-- Set up Pre-commit in your project: `pre-commit install`
-Once installed, Pre-commit will automatically run the defined checks and formatting before each commit.
+## Run On Kubernetes (Current Setup)
 
-### Reference Paper
-Fearnhead, P., & Rigaill, G. (2019). Changepoint Detection in the Presence of Outliers. Journal of the American Statistical Association, 114(525), 169–183.
+This project deploys the Streamlit app using the manifests in `deployment/`.
 
-### Implemented Methods and experiments
-The repository implements the dynamic programming algorithm described in the paper with three distinct cost functions (L2 loss, Huber loss, Biweight loss) to compare sensitivity and robustness.
+### Kubernetes Files
 
-The analysis is performed on two types of datasets:
-- Simulated Scenarios: Reproduction of the six benchmark scenarios described in the article (varying noise levels, Student-t noise, short segments) to validate the theoretical properties of the Biweight loss.
-- Real-world Economic Indicators: Application of the algorithms to financial time series from the FRED database, including: inflation expectations, GDP growth rates (Japan, UK, Germany), market volatility and credit spreads.
+- `deployment/deployment.yaml`
+- `deployment/service.yaml`
+- `deployment/ingress.yaml`
 
-### Results
-The results of our experiments are available in the "final_notebook.ipynb" notebook. A detailed analysis is also available in the "Report of the project.pdf" file.
+### Deploy
 
-### Requirements
-Python 3.x
+```bash
+kubectl apply -f deployment/
+kubectl get pods -l app=rfpop-app
+kubectl logs -l app=rfpop-app -f --tail=200
+```
 
-numpy
+### Helper Script (Deploy + Rollout + Logs + Port-Forward)
 
-pandas
+```bash
+chmod +x scripts/run_deployment.sh
+scripts/run_deployment.sh
+```
 
-matplotlib
+Custom local port example:
 
-statsmodels
+```bash
+scripts/run_deployment.sh 8502
+```
+
+### Ingress
+
+Current host in `deployment/ingress.yaml`:
+
+- `rfpop-change-points.lab.sspcloud.fr`
+
+If you use a different domain, update both `spec.tls.hosts` and `spec.rules.host` in `deployment/ingress.yaml` before applying.
+
+### Clean Up
+
+```bash
+kubectl delete -f deployment/
+```
+
+## Data Sources
+
+The app can load toy CSVs from:
+
+- Local files in `data/`
+- Public SSPCloud MinIO URL (default):
+  `https://minio.lab.sspcloud.fr/asicard/MPPDS - Projet`
+
+Default toy filenames:
+
+- `data example 1.csv`
+- `data example 2.csv`
+- `data example 3.csv`
+- `data example 4.csv`
+
+You can override the remote base URL with:
+
+- `PUBLIC_DATA_URL`
+
+## Development Commands
+
+Install tools from `requirements.txt`, then use:
+
+```bash
+pytest
+ruff check .
+black .
+pylint src app.py
+```
+
+Optional pre-commit setup:
+
+```bash
+pip install pre-commit
+pre-commit install
+```
