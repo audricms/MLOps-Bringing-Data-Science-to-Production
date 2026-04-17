@@ -20,6 +20,37 @@ To isolate the project dependencies, it is recommended to use a virtual environm
 - Open the app:
 	- `http://localhost:8501`
 
+By default, container logs display `http://localhost:8501`.
+If you map a different host port, open that mapped port in your browser.
+
+### Helper Script For Correct URL Display
+
+Use the helper script to build and run the container while automatically setting
+the Streamlit displayed URL to your chosen host port.
+
+- Make it executable once:
+	- `chmod +x scripts/run_docker.sh`
+- Run on default port `8501`:
+	- `scripts/run_docker.sh`
+- Run on a custom port (example `8504`):
+	- `scripts/run_docker.sh 8504`
+
+## Toy Data From SSPCloud S3 (Public MinIO)
+
+The app can load built-in toy CSV examples directly from public MinIO storage.
+
+- Default base URL:
+	- `https://minio.lab.sspcloud.fr/asicard/MPPDS - Projet`
+- The app uses these toy filenames:
+	- `data example 1.csv`
+	- `data example 2.csv`
+	- `data example 3.csv`
+	- `data example 4.csv`
+- If remote loading fails, the app falls back to local files in `data/` when available.
+
+You can override the default base URL with:
+- `TOY_DATA_BASE_URL`
+
 ### Pre-commit
 
 Pre-commit automatically formats your code before each commit, ensuring that all developers follow the same formatting rules. To install it:
