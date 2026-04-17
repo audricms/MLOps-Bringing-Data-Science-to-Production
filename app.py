@@ -143,7 +143,10 @@ if df is not None:
         == "Elbow Method (recommended if no statisfying results with the SIC method)"
     ):
         # Le bouton s'affiche ici. S'il ne s'affiche pas, vérifiez l'indentation de ce 'elif'
-        if st.button("Generate the elbow plot") or "elbow_done" in st.session_state:
+        if st.button("Generate the elbow plot") or st.session_state.get(
+            "elbow_done", False
+        ):
+            st.session_state.elbow_done = True
             if "elbow_fig" not in st.session_state:
                 progress_text = "Computing results for the grid of parameters..."
                 bar = st.progress(0, text=progress_text)
