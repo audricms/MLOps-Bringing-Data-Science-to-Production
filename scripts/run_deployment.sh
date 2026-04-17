@@ -7,7 +7,7 @@ DEPLOYMENT_NAME="rfpop-deployment"
 SERVICE_NAME="rfpop-service"
 LOCAL_PORT="${1:-8501}"
 
-if [[ "${LOCAL_PORT}" =~ ^-h|--help$ ]]; then
+if [[ "${LOCAL_PORT}" == "-h" || "${LOCAL_PORT}" == "--help" ]]; then
   echo "Usage: scripts/run_deployment.sh [LOCAL_PORT]"
   echo "Example: scripts/run_deployment.sh 8502"
   exit 0
