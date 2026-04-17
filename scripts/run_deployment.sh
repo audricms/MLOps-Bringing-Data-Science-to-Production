@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-NAMESPACE="rfpop"
+NAMESPACE="user-asicard"
 APP_LABEL="rfpop-app"
 DEPLOYMENT_NAME="rfpop-deployment"
 SERVICE_NAME="rfpop-service"
@@ -21,11 +21,7 @@ fi
 echo "Applying Kubernetes resources..."
 kubectl apply -f deployment/
 
-if kubectl get namespace "${NAMESPACE}" >/dev/null 2>&1; then
-  NAMESPACE_ARGS=("-n" "${NAMESPACE}")
-else
-  NAMESPACE_ARGS=()
-fi
+NAMESPACE_ARGS=("-n" "${NAMESPACE}")
 
 echo "Waiting for deployment rollout..."
 kubectl "${NAMESPACE_ARGS[@]}" rollout status deployment/"${DEPLOYMENT_NAME}" --timeout=180s
