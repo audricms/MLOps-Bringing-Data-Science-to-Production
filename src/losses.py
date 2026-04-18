@@ -1,7 +1,7 @@
 from typing import List
 
-from src.constants import INF
 from src.utils import QuadPiece
+from src.variables import INF
 
 
 def gamma_builder_L2(y: float, tau_for_new: int) -> List[QuadPiece]:

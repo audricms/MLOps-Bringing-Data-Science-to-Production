@@ -9,6 +9,7 @@ from src.utils import (
     natural_key,
     read_csv_from_public_url,
 )
+from src.variables import VALID_LOSSES
 from src.visualization import plot_segments, plot_sensitivity_to_beta
 
 st.set_page_config(
@@ -128,7 +129,7 @@ if df is not None:
 
     col1, col2 = st.columns(2)
     with col1:
-        loss_choices = sorted(["huber", "biweight", "l2"])
+        loss_choices = sorted(VALID_LOSSES)
         loss = st.selectbox("Loss", loss_choices, on_change=reset_state)
     with col2:
         method_choices = sorted(

@@ -4,6 +4,7 @@ from typing import Callable, List
 import numpy as np
 
 from src.utils import QuadPiece
+from src.variables import EPS_BOUNDARY, EPS_COEFF, EPS_CONST, EPS_ZERO
 
 
 def min_over_theta(Qt_pieces: List[QuadPiece]) -> tuple[float, int]:
@@ -31,8 +32,8 @@ def min_over_theta(Qt_pieces: List[QuadPiece]) -> tuple[float, int]:
     best_val = float("inf")
     best_tau = 0
     for a, b, A, B, C, tau in Qt_pieces:
-        if abs(A) < 1e-16:
-            left = a + 1e-12
+        if abs(A) < EPS_ZERO:
+            left = a + EPS_BOUNDARY
             right = b
             vleft = A * left * left + B * left + C
             vright = A * right * right + B * right + C
@@ -40,7 +41,7 @@ def min_over_theta(Qt_pieces: List[QuadPiece]) -> tuple[float, int]:
         else:
             theta_star = -B / (2.0 * A)
             if theta_star <= a:
-                theta_star = a + 1e-12
+                theta_star = a + EPS_BOUNDARY
             elif theta_star > b:
                 theta_star = b
         val = A * theta_star * theta_star + B * theta_star + C
@@ -86,15 +87,15 @@ def add_qstar_and_gamma(
         newB = pB + gB
         newC = pC + gC
         out.append((a, b, newA, newB, newC, p_tau))
-        if abs(b - pb) < 1e-12:
+        if abs(b - pb) < EPS_BOUNDARY:
             i += 1
-        if abs(b - gb) < 1e-12:
+        if abs(b - gb) < EPS_BOUNDARY:
             j += 1
         if (
             (i < len(Qstar_pieces) and j < len(gamma_pieces))
-            and a >= b - 1e-14
-            and abs(b - Qstar_pieces[i][1]) > 1e-12
-            and abs(b - gamma_pieces[j][1]) > 1e-12
+            and a >= b - EPS_COEFF
+            and abs(b - Qstar_pieces[i][1]) > EPS_BOUNDARY
+            and abs(b - gamma_pieces[j][1]) > EPS_BOUNDARY
         ):
             break
     if not out:
@@ -104,11 +105,11 @@ def add_qstar_and_gamma(
         a, b, A, B, C, tau = pc
         ma, mb, mA, mB, mC, mtau = merged[-1]
         if (
-            abs(A - mA) < 1e-14
-            and abs(B - mB) < 1e-14
-            and abs(C - mC) < 1e-9
+            abs(A - mA) < EPS_COEFF
+            and abs(B - mB) < EPS_COEFF
+            and abs(C - mC) < EPS_CONST
             and tau == mtau
-            and abs(a - mb) < 1e-9
+            and abs(a - mb) < EPS_CONST
         ):
             merged[-1] = (ma, b, mA, mB, mC, mtau)
         else:
@@ -149,23 +150,23 @@ def prune_compare_to_constant(
     out: List[QuadPiece] = []
     for a, b, A, B, C, tau in Qt_pieces:
         roots: List[float] = []
-        if abs(A) < 1e-16:
-            if abs(B) > 1e-16:
+        if abs(A) < EPS_ZERO:
+            if abs(B) > EPS_ZERO:
                 x = -(C - thr) / B
-                if x + 1e-12 >= a and x - 1e-12 <= b:
+                if x + EPS_BOUNDARY >= a and x - EPS_BOUNDARY <= b:
                     x_clamped = max(min(x, b), a)
                     roots.append(x_clamped)
         else:
             D = B * B - 4.0 * A * (C - thr)
-            if D >= -1e-14:
+            if D >= -EPS_COEFF:
                 D = max(D, 0.0)
                 sqrtD = math.sqrt(D)
                 x1 = (-B - sqrtD) / (2.0 * A)
                 x2 = (-B + sqrtD) / (2.0 * A)
                 for x in (x1, x2):
-                    if x + 1e-12 >= a and x - 1e-12 <= b:
+                    if x + EPS_BOUNDARY >= a and x - EPS_BOUNDARY <= b:
                         x_clamped = max(min(x, b), a)
-                        if not any(abs(x_clamped - r) < 1e-9 for r in roots):
+                        if not any(abs(x_clamped - r) < EPS_CONST for r in roots):
                             roots.append(x_clamped)
         roots.sort()
         breaks = [a] + roots + [b]
@@ -174,7 +175,7 @@ def prune_compare_to_constant(
             hi = breaks[k + 1]
             mid = (lo + hi) / 2.0
             val_mid = A * mid * mid + B * mid + C - thr
-            if val_mid <= 1e-12:
+            if val_mid <= EPS_BOUNDARY:
                 out.append((lo, hi, A, B, C, tau))
             else:
                 out.append((lo, hi, 0.0, 0.0, thr, t_index_for_new))
@@ -185,11 +186,11 @@ def prune_compare_to_constant(
         a, b, A, B, C, tau = pc
         ma, mb, mA, mB, mC, mtau = merged[-1]
         if (
-            abs(A - mA) < 1e-14
-            and abs(B - mB) < 1e-14
-            and abs(C - mC) < 1e-9
+            abs(A - mA) < EPS_COEFF
+            and abs(B - mB) < EPS_COEFF
+            and abs(C - mC) < EPS_CONST
             and tau == mtau
-            and abs(a - mb) < 1e-9
+            and abs(a - mb) < EPS_CONST
         ):
             merged[-1] = (ma, b, mA, mB, mC, mtau)
         else:

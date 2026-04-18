@@ -11,6 +11,7 @@ from src.model_selection import (
     get_gamma_builder,
 )
 from src.rfpop_algorithms import rfpop_algorithm
+from src.variables import VALID_LOSSES
 
 
 def plot_segments(
@@ -29,9 +30,8 @@ def plot_segments(
     scaling : float, optional
         Scaling multiplier for beta, by default 1.0.
     """
-    valid_losses = ["huber", "biweight", "l2"]
-    if loss not in valid_losses:
-        raise ValueError(f"Loss '{loss}' not recognized. Must be one of {valid_losses}")
+    if loss not in VALID_LOSSES:
+        raise ValueError(f"Loss '{loss}' not recognized. Must be one of {VALID_LOSSES}")
 
     y = df[name].dropna()
 
@@ -128,9 +128,8 @@ def plot_sensitivity_to_beta(
     scaling_list : Sequence[float], optional
         List of multipliers applied to the theoretical beta.
     """
-    valid_losses = ["huber", "biweight", "l2"]
-    if loss not in valid_losses:
-        raise ValueError(f"Loss '{loss}' not recognized. Must be one of {valid_losses}")
+    if loss not in VALID_LOSSES:
+        raise ValueError(f"Loss '{loss}' not recognized. Must be one of {VALID_LOSSES}")
 
     y = df[name].dropna()
 

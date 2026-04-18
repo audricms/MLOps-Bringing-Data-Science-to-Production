@@ -8,6 +8,7 @@ from statsmodels import robust
 
 from src.losses import gamma_builder_biweight, gamma_builder_huber, gamma_builder_L2
 from src.utils import QuadPiece
+from src.variables import BIWEIGHT_K_STD, HUBER_K_STD
 
 
 def biweight_phi(z: float, K_std: float) -> float:
@@ -90,7 +91,7 @@ def compute_penalty_beta(y: Sequence[float], loss: str) -> float | None:
         return 2 * sigma**2 * np.log(n)
 
     elif loss == "biweight":
-        K_std = 3.0
+        K_std = BIWEIGHT_K_STD
         E_phi2, _ = integrate.quad(
             lambda z: (biweight_phi(z=z, K_std=K_std) ** 2) * norm.pdf(z),
             -np.inf,
@@ -99,7 +100,7 @@ def compute_penalty_beta(y: Sequence[float], loss: str) -> float | None:
         return 2 * sigma**2 * np.log(n) * E_phi2
 
     elif loss == "huber":
-        K_std = 1.345
+        K_std = HUBER_K_STD
         E_phi2, _ = integrate.quad(
             lambda z: (huber_phi(z=z, K_std=K_std) ** 2) * norm.pdf(z),
             -np.inf,
@@ -143,9 +144,9 @@ def compute_loss_bound_K(
     ys = pd.Series(y)
     mad = robust.mad(ys.diff().dropna()) / np.sqrt(2)
     if loss == "biweight":
-        return 3 * mad
+        return BIWEIGHT_K_STD * mad
     elif loss == "huber":
-        return 1.345 * mad
+        return HUBER_K_STD * mad
 
 
 def get_gamma_builder(
