@@ -15,7 +15,7 @@ from src.visualization import plot_segments
 st.set_page_config(
     page_title="Changepoint detection in the presence of outliers", layout="wide"
 )
-st.title("Changepoint Detection for Time Series with Outliers (RFPOP algorithm)")
+st.title("Changepoint Detection for Time Series with Outliers")
 
 st.markdown(
     """
@@ -26,10 +26,10 @@ st.markdown(
 """
 )
 
-with st.expander("ℹ️ Details about the algorithm and parameters"):
+with st.expander("ℹ️ Details about the RFPOP algorithm and parameters"):
     st.markdown(
         r"""
-    **Details about the algorithm and its parameters:**
+    **Details about the RFPOP algorithm and its parameters:**
 
     **1. Loss functions:**
     * **L2:** Standard quadratic loss. Theoretically more sensitive to outliers (although not always the case).
