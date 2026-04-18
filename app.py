@@ -4,7 +4,12 @@ import pandas as pd
 import streamlit as st
 
 from src.model_selection import plot_sensitivity_tobeta
-from src.utils import build_public_toy_csv_url, natural_key, read_csv_from_public_url
+from src.utils import (
+    build_public_toy_csv_url,
+    list_s3_csv_files,
+    natural_key,
+    read_csv_from_public_url,
+)
 from src.visualization import plot_segments
 
 st.set_page_config(
@@ -74,18 +79,13 @@ if data_source == "Upload a time series":
     if uploaded_file is not None:
         df = pd.read_csv(uploaded_file)
 else:
-    default_toy_files = sorted(
-        [
-            "data example 1.csv",
-            "data example 2.csv",
-            "data example 3.csv",
-            "data example 4.csv",
-        ]
-    )
-
-    toy_files = (
-        sorted(internal_files, key=natural_key) if internal_files else default_toy_files
-    )
+    if internal_files:
+        toy_files = sorted(internal_files, key=natural_key)
+    else:
+        try:
+            toy_files = list_s3_csv_files(PUBLIC_DATA_URL)
+        except Exception:
+            toy_files = []
 
     if not toy_files:
         st.warning("No toy CSV file is configured.")
