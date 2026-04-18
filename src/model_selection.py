@@ -1,8 +1,9 @@
-from typing import Literal
+from typing import Any, Literal, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.figure import Figure
 from scipy import integrate
 from scipy.stats import norm
 from statsmodels import robust
@@ -11,7 +12,7 @@ from src.losses import gamma_builder_biweight, gamma_builder_huber, gamma_builde
 from src.rfpop_algorithms import rfpop_algorithm
 
 
-def biweight_phi(z, K_std):
+def biweight_phi(z: float, K_std: float) -> float:
     """Biweight influence/psi function used in robust losses.
 
     This function computes the (derivative-like) influence function for the
@@ -35,7 +36,7 @@ def biweight_phi(z, K_std):
     return 2 * z if abs(z) <= K_std else 0.0
 
 
-def huber_phi(z, K_std):
+def huber_phi(z: float, K_std: float) -> float:
     """Huber influence/psi function.
 
     For small residuals (|z| <= K_std) this behaves like 2*z (linear). For
@@ -58,7 +59,7 @@ def huber_phi(z, K_std):
     return 2 * z if abs(z) <= K_std else 2 * K_std * np.sign(z)
 
 
-def compute_penalty_beta(y, loss):
+def compute_penalty_beta(y: Sequence[float], loss: str) -> float | None:
     """Compute a penalty constant (beta) for change-point detection.
 
     The returned penalty depends on the chosen loss function and an
@@ -111,8 +112,15 @@ def compute_penalty_beta(y, loss):
     elif loss == "l1":
         return np.log(n)
 
+    else:
+        raise ValueError(
+            f"Loss '{loss}' not recognized. Must be one of 'l2', 'biweight', 'huber', 'l1'."
+        )
 
-def compute_loss_bound_K(y, loss: Literal["huber", "biweight"]):
+
+def compute_loss_bound_K(
+    y: Sequence[float], loss: Literal["huber", "biweight"]
+) -> float:
     """Return the tuning constant K (in original units) for robust losses.
 
     The routine estimates the noise scale using a MAD-based estimator on the
@@ -143,12 +151,25 @@ def compute_loss_bound_K(y, loss: Literal["huber", "biweight"]):
 
 
 def plot_sensitivity_tobeta(
-    df,
-    name,
-    loss,
-    scaling_list=[0.01, 0.1, 1, 5, 10, 50, 100, 500, 1000, 5000, 10000, 50000],
-    progress_bar=None,
-):
+    df: pd.DataFrame,
+    name: str,
+    loss: str,
+    scaling_list: list[float] = [
+        0.01,
+        0.1,
+        1,
+        5,
+        10,
+        50,
+        100,
+        500,
+        1000,
+        5000,
+        10000,
+        50000,
+    ],
+    progress_bar: Any = None,
+) -> Figure:
     """Plot number of detected changepoints as a function of beta scaling for a specific loss.
 
     Parameters

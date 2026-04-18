@@ -117,7 +117,7 @@ if df is not None:
         st.error("The CSV does not contain any numerical variable.")
         st.stop()
 
-    def reset_state():
+    def reset_state() -> None:
         if "elbow_done" in st.session_state:
             del st.session_state["elbow_done"]
         if "elbow_fig" in st.session_state:

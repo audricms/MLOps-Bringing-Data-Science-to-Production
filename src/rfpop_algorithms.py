@@ -1,12 +1,12 @@
 import math
-from typing import List
+from typing import Callable, List
 
 import numpy as np
 
 from src.utils import QuadPiece
 
 
-def min_over_theta(Qt_pieces: List[QuadPiece]):
+def min_over_theta(Qt_pieces: List[QuadPiece]) -> tuple[float, int]:
     """Find the minimum value of Q_t(theta) over a piecewise quadratic function.
 
     Each element of ``Qt_pieces`` is a QuadPiece describing an interval (a, b]
@@ -53,7 +53,7 @@ def min_over_theta(Qt_pieces: List[QuadPiece]):
 def add_qstar_and_gamma(
     Qstar_pieces: List[QuadPiece],
     gamma_pieces: List[QuadPiece],
-):
+) -> List[QuadPiece]:
     """Add (pointwise) a Q* representation and a gamma representation.
 
     Both inputs represent piecewise quadratic functions as ordered lists of
@@ -121,7 +121,7 @@ def prune_compare_to_constant(
     Qt_val: float,
     beta: float,
     t_index_for_new: int,
-):
+) -> List[QuadPiece]:
     """Prune Qt by comparing to a constant threshold and create Q*_{t+1}.
 
     For each interval of the piecewise quadratic Qt, compute where Qt(theta)
@@ -197,7 +197,11 @@ def prune_compare_to_constant(
     return merged
 
 
-def rfpop_algorithm(y: List[float], gamma_builder: callable, beta: float):
+def rfpop_algorithm(
+    y: List[float],
+    gamma_builder: Callable[[float, int], List[QuadPiece]],
+    beta: float,
+) -> tuple[list[int], list[float], List[QuadPiece]]:
     """Run the RFPOP dynamic program on a sequence y with given loss builder.
 
     This function implements the top-level RFPOP loop. At each time t it:

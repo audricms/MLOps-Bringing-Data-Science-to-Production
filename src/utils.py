@@ -35,7 +35,7 @@ class QuadPiece(NamedTuple):
     tau: int
 
 
-def natural_key(s: str):
+def natural_key(s: str) -> list[int | str]:
     """Split a string into a list of strings and integers for natural sorting.
 
     Parameters

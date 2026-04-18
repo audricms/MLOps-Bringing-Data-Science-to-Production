@@ -1,11 +1,15 @@
 import matplotlib.pyplot as plt
+import pandas as pd
+from matplotlib.figure import Figure
 
 from src.losses import gamma_builder_biweight, gamma_builder_huber, gamma_builder_L2
 from src.model_selection import compute_loss_bound_K, compute_penalty_beta
 from src.rfpop_algorithms import rfpop_algorithm
 
 
-def plot_segments(df, name, loss, scaling=1.0):
+def plot_segments(
+    df: pd.DataFrame, name: str, loss: str, scaling: float = 1.0
+) -> Figure:
     """Plot detected segments for a specific loss.
 
     Parameters
