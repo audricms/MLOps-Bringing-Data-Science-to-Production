@@ -1,9 +1,11 @@
 import os
+import time
 
 import pandas as pd
 import streamlit as st
 from dotenv import load_dotenv
 
+from src.logger import get_logger
 from src.utils import (
     build_public_toy_csv_url,
     list_s3_csv_files,
@@ -14,6 +16,8 @@ from src.variables import DATA_DIR, VALID_LOSSES
 from src.visualization import plot_segments, plot_sensitivity_to_beta
 
 load_dotenv()
+
+logger = get_logger(__name__)
 
 st.set_page_config(
     page_title="Changepoint detection in the presence of outliers", layout="wide"
@@ -78,6 +82,9 @@ if data_source == "Upload a time series":
     )
     if uploaded_file is not None:
         df = pd.read_csv(uploaded_file)
+        logger.info(
+            "dataset_loaded", extra={"source": "upload", "filename": uploaded_file.name}
+        )
 else:
     if internal_files:
         toy_files = sorted(internal_files, key=natural_key)
@@ -96,17 +103,39 @@ else:
         )
 
         try:
+            t0 = time.perf_counter()
             df = read_csv_from_public_url(public_csv_url)
+            duration_ms = round((time.perf_counter() - t0) * 1000)
+            logger.info(
+                "dataset_loaded",
+                extra={
+                    "source": "s3",
+                    "filename": selected_filename,
+                    "duration_ms": duration_ms,
+                },
+            )
             st.caption("Toy dataset loaded from public S3 (SSPCloud MinIO).")
         except Exception as s3_error:
             local_file_path = os.path.join(DATA_DIR, selected_filename)
             if os.path.exists(local_file_path):
                 df = pd.read_csv(local_file_path)
+                logger.warning(
+                    "s3_load_failed",
+                    extra={
+                        "filename": selected_filename,
+                        "error": str(s3_error),
+                        "fallback": "local",
+                    },
+                )
                 st.warning(
                     "Could not read toy dataset from public S3. Falling back to local file. "
                     f"Reason: {s3_error}"
                 )
             else:
+                logger.error(
+                    "dataset_load_failed",
+                    extra={"filename": selected_filename, "error": str(s3_error)},
+                )
                 st.error(f"Could not load dataset from public S3: {s3_error}")
                 st.stop()
 
@@ -157,6 +186,10 @@ if df is not None:
                 bar.progress(100, text="End.")
                 st.pyplot(fig)
             except Exception as e:
+                logger.error(
+                    "algorithm_error",
+                    extra={"method": "sic", "loss": loss, "error": str(e)},
+                )
                 st.error(f"Error when running the algorithm : {e}")
             finally:
                 bar.empty()
@@ -179,6 +212,10 @@ if df is not None:
                     st.session_state.elbow_fig = fig_elbow
                     st.session_state.elbow_done = True
                 except Exception as e:
+                    logger.error(
+                        "algorithm_error",
+                        extra={"method": "elbow", "loss": loss, "error": str(e)},
+                    )
                     st.error(f"Error when generating the elbow plot : {e}")
                     st.stop()
                 finally:
@@ -210,6 +247,15 @@ if df is not None:
                     bar_final.progress(100, text="End")
                     st.pyplot(fig_final)
                 except Exception as e:
+                    logger.error(
+                        "algorithm_error",
+                        extra={
+                            "method": "elbow_manual",
+                            "loss": loss,
+                            "scaling": chosen_scaling,
+                            "error": str(e),
+                        },
+                    )
                     st.error(f"Error : {e}")
                 finally:
                     bar_final.empty()
