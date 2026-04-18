@@ -1,6 +1,5 @@
-from typing import Literal
+from typing import Callable, List, Literal, Sequence
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy import integrate
@@ -8,10 +7,11 @@ from scipy.stats import norm
 from statsmodels import robust
 
 from src.losses import gamma_builder_biweight, gamma_builder_huber, gamma_builder_L2
-from src.rfpop_algorithms import rfpop_algorithm
+from src.utils import QuadPiece
+from src.variables import BIWEIGHT_K_STD, HUBER_K_STD
 
 
-def biweight_phi(z, K_std):
+def biweight_phi(z: float, K_std: float) -> float:
     """Biweight influence/psi function used in robust losses.
 
     This function computes the (derivative-like) influence function for the
@@ -35,7 +35,7 @@ def biweight_phi(z, K_std):
     return 2 * z if abs(z) <= K_std else 0.0
 
 
-def huber_phi(z, K_std):
+def huber_phi(z: float, K_std: float) -> float:
     """Huber influence/psi function.
 
     For small residuals (|z| <= K_std) this behaves like 2*z (linear). For
@@ -58,7 +58,7 @@ def huber_phi(z, K_std):
     return 2 * z if abs(z) <= K_std else 2 * K_std * np.sign(z)
 
 
-def compute_penalty_beta(y, loss):
+def compute_penalty_beta(y: Sequence[float], loss: str) -> float | None:
     """Compute a penalty constant (beta) for change-point detection.
 
     The returned penalty depends on the chosen loss function and an
@@ -91,7 +91,7 @@ def compute_penalty_beta(y, loss):
         return 2 * sigma**2 * np.log(n)
 
     elif loss == "biweight":
-        K_std = 3.0
+        K_std = BIWEIGHT_K_STD
         E_phi2, _ = integrate.quad(
             lambda z: (biweight_phi(z=z, K_std=K_std) ** 2) * norm.pdf(z),
             -np.inf,
@@ -100,7 +100,7 @@ def compute_penalty_beta(y, loss):
         return 2 * sigma**2 * np.log(n) * E_phi2
 
     elif loss == "huber":
-        K_std = 1.345
+        K_std = HUBER_K_STD
         E_phi2, _ = integrate.quad(
             lambda z: (huber_phi(z=z, K_std=K_std) ** 2) * norm.pdf(z),
             -np.inf,
@@ -111,8 +111,15 @@ def compute_penalty_beta(y, loss):
     elif loss == "l1":
         return np.log(n)
 
+    else:
+        raise ValueError(
+            f"Loss '{loss}' not recognized. Must be one of 'l2', 'biweight', 'huber', 'l1'."
+        )
 
-def compute_loss_bound_K(y, loss: Literal["huber", "biweight"]):
+
+def compute_loss_bound_K(
+    y: Sequence[float], loss: Literal["huber", "biweight"]
+) -> float:
     """Return the tuning constant K (in original units) for robust losses.
 
     The routine estimates the noise scale using a MAD-based estimator on the
@@ -137,154 +144,31 @@ def compute_loss_bound_K(y, loss: Literal["huber", "biweight"]):
     ys = pd.Series(y)
     mad = robust.mad(ys.diff().dropna()) / np.sqrt(2)
     if loss == "biweight":
-        return 3 * mad
+        return BIWEIGHT_K_STD * mad
     elif loss == "huber":
-        return 1.345 * mad
+        return HUBER_K_STD * mad
 
 
-def extract_changepoints_backtrack(cp_tau):
-    """Extract changepoints from a backtracking array `cp_tau`.
-
-    Parameters
-    ----------
-    cp_tau : Sequence[int]
-        Backpointer array where cp_tau[t] is the index of the previous
-        changepoint for position t (0 denotes no previous changepoint).
-
-    Returns
-    -------
-    List[int]
-        Sorted list of changepoint indices (excluding 0), in increasing order.
-    """
-
-    n = len(cp_tau)
-    changepoints = []
-    t = n - 1
-
-    while t > 0:
-        tau = cp_tau[t]
-        if tau > 0:
-            changepoints.append(tau)
-        t = tau
-
-    changepoints.reverse()
-    return changepoints
-
-
-def get_segments_from_cp_tau(cp_tau, y):
-    """Return a list of segments (start, end, mean) from cp_tau and data y.
+def get_gamma_builder(
+    y: Sequence[float], loss: str
+) -> Callable[[float, int], List[QuadPiece]]:
+    """Return a gamma_builder callable bound to the appropriate loss function.
 
     Parameters
     ----------
-    cp_tau : Sequence[int]
-        Backpointer array as produced by RFPOP (length n).
-    y : Sequence[float] or pandas.Series
-        Original signal values used to compute segment means.
-
-    Returns
-    -------
-    List[Tuple[int, int, float]]
-        Each tuple is (start_index, end_index, segment_mean) and segments are
-        returned in chronological order.
-    """
-
-    n = len(cp_tau)
-    segments = []
-    t = n - 1
-
-    while t > 0:
-        t_prev = int(cp_tau[t])
-        if isinstance(y, pd.Series):
-            seg_mean = y.iloc[t_prev : t + 1].mean()
-        else:
-            seg_mean = np.mean(y[t_prev : t + 1])
-        segments.append((t_prev, t, seg_mean))
-        t = t_prev
-
-    segments.reverse()
-    return segments
-
-
-if __name__ == "main":
-    get_segments_from_cp_tau(cp_tau=[1, 1], y=None)
-    extract_changepoints_backtrack(cp_tau=[1, 1])
-
-
-def plot_sensitivity_tobeta(
-    df,
-    name,
-    loss,
-    scaling_list=[0.01, 0.1, 1, 5, 10, 50, 100, 500, 1000, 5000, 10000, 50000],
-    progress_bar=None,
-):
-    """Plot number of detected changepoints as a function of beta scaling for a specific loss.
-
-    Parameters
-    ----------
-    df : pandas.DataFrame
-        DataFrame containing the series to plot (time series indexed by date).
-    name : str
-        Column name in ``df`` to analyze.
+    y : Sequence[float]
+        Observed signal used to derive the K tuning constant for robust losses.
     loss : str
-        The loss function to use ('huber', 'biweight', 'l2').
-    scaling_list : Sequence[float], optional
-        List of multipliers applied to the theoretical beta.
+        One of 'l2', 'huber', 'biweight'.
+
+    Returns
+    -------
+    Callable[[float, int], List[QuadPiece]]
+        Ready-to-use gamma builder for ``rfpop_algorithm``.
     """
-    valid_losses = ["huber", "biweight", "l2"]
-    if loss not in valid_losses:
-        raise ValueError(f"Loss '{loss}' not recognized. Must be one of {valid_losses}")
-
-    y = df[name].dropna()
-
-    beta = compute_penalty_beta(y=y, loss=loss)
-
-    # Optimisation : Définition de la fonction de construction du gamma hors de la boucle
     if loss in ["huber", "biweight"]:
         K = compute_loss_bound_K(y=y, loss=loss)
-
         if loss == "huber":
-
-            def gamma_builder(y_t, t):
-                return gamma_builder_huber(y=y_t, K=K, tau_for_new=t)
-
-        else:
-
-            def gamma_builder(y_t, t):
-                return gamma_builder_biweight(y=y_t, K=K, tau_for_new=t)
-
-    elif loss == "l2":
-
-        def gamma_builder(y_t, t):
-            return gamma_builder_L2(y=y_t, tau_for_new=t)
-
-    list_scaling = np.array(scaling_list) * beta
-    nb_changepoints = []
-    total_steps = len(list_scaling)
-
-    for idx, scaling in enumerate(list_scaling):
-        cp_tau, _, _ = rfpop_algorithm(
-            y=y,
-            gamma_builder=gamma_builder,
-            beta=scaling,
-        )
-        nb_changepoints.append(len(set(cp_tau)))
-
-        # Mise à jour conditionnelle de la barre de progression Streamlit
-        if progress_bar is not None:
-            progress_percentage = int(((idx + 1) / total_steps) * 100)
-            # Streamlit requiert un entier entre 0 et 100
-            progress_percentage = max(0, min(100, progress_percentage))
-            progress_bar.progress(progress_percentage)
-
-    fig, ax = plt.subplots(figsize=(8, 5))
-
-    ax.plot(scaling_list, nb_changepoints, marker="o", linestyle="-", markersize=4)
-    ax.set_xscale("log")
-    ax.set_yscale("log")
-    ax.set_xlabel("Beta scaling factor (logscale)")
-    ax.set_ylabel("Number of detected changepoints (logscale)")
-    ax.set_title(f"{name} - {loss} loss: Sensitivity to beta")
-    ax.grid(True, which="both", ls="--", alpha=0.5)
-
-    plt.tight_layout()
-    return fig
+            return lambda y_t, t: gamma_builder_huber(y=y_t, K=K, tau_for_new=t)
+        return lambda y_t, t: gamma_builder_biweight(y=y_t, K=K, tau_for_new=t)
+    return lambda y_t, t: gamma_builder_L2(y=y_t, tau_for_new=t)

@@ -3,14 +3,14 @@ import os
 import pandas as pd
 import streamlit as st
 
-from src.model_selection import plot_sensitivity_tobeta
 from src.utils import (
     build_public_toy_csv_url,
     list_s3_csv_files,
     natural_key,
     read_csv_from_public_url,
 )
-from src.visualization import plot_segments
+from src.variables import VALID_LOSSES
+from src.visualization import plot_segments, plot_sensitivity_to_beta
 
 st.set_page_config(
     page_title="Changepoint detection in the presence of outliers", layout="wide"
@@ -117,7 +117,7 @@ if df is not None:
         st.error("The CSV does not contain any numerical variable.")
         st.stop()
 
-    def reset_state():
+    def reset_state() -> None:
         if "elbow_done" in st.session_state:
             del st.session_state["elbow_done"]
         if "elbow_fig" in st.session_state:
@@ -129,7 +129,7 @@ if df is not None:
 
     col1, col2 = st.columns(2)
     with col1:
-        loss_choices = sorted(["huber", "biweight", "l2"])
+        loss_choices = sorted(VALID_LOSSES)
         loss = st.selectbox("Loss", loss_choices, on_change=reset_state)
     with col2:
         method_choices = sorted(
@@ -173,7 +173,7 @@ if df is not None:
                 bar = st.progress(0, text=progress_text)
 
                 try:
-                    fig_elbow = plot_sensitivity_tobeta(
+                    fig_elbow = plot_sensitivity_to_beta(
                         df, name=col_name, loss=loss, progress_bar=bar
                     )
                     st.session_state.elbow_fig = fig_elbow
