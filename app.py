@@ -83,7 +83,6 @@ else:
         ]
     )
 
-    # Natural (numeric-aware) sorting for filenames when using internal files.
     toy_files = (
         sorted(internal_files, key=natural_key) if internal_files else default_toy_files
     )
@@ -179,9 +178,6 @@ if df is not None:
                     )
                     st.session_state.elbow_fig = fig_elbow
                     st.session_state.elbow_done = True
-                    _ = (
-                        st.session_state.elbow_done
-                    )  # Tricks Vulture into thinking it was used
                 except Exception as e:
                     st.error(f"Error when generating the elbow plot : {e}")
                     st.stop()
