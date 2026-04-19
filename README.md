@@ -60,7 +60,8 @@ Once installed, Pre-commit will automatically run the defined checks and formatt
 Create a `.env` file at the project root with the following variable:
 
 ```
-S3_DATA_URL="https://minio.lab.sspcloud.fr/asicard/MPPDS - Projet"
+S3_BUCKET="asicard"
+S3_PREFIX="MPPDS - Projet"
 ```
 
 This URL points to the public S3 bucket used to load toy datasets. The app will fall back to local files in `data/` if this variable is not set or the remote is unreachable.
@@ -100,7 +101,7 @@ While developing, you can test your code in the cloud using Kubernetes. We use K
 
 ### Configure Your Environment
 
-Before deploying, open the `deployment/kustomization.yaml` file and update it with your personal SSPCloud username:
+Before deploying, open the `deployment_dev/kustomization.yaml` file and update it with your personal SSPCloud username:
 1. Change `namespace: user-vgraillat` to your active namespace.
 2. Update the two Ingress URL hostnames under the `patches:` section to ensure they match your personal URLs.
 
@@ -108,7 +109,7 @@ Before deploying, open the `deployment/kustomization.yaml` file and update it wi
 
 Once configured, deploy the application using the `-k` (Kustomize) flag:
 ```bash
-kubectl apply -k deployment/
+kubectl apply -k deployment_dev/
 ```
 
 ### Monitor
@@ -123,7 +124,7 @@ kubectl logs -l app=rfpop-app -f --tail=200
 
 To remove the application from your cluster:
 ```bash
-kubectl delete -k deployment/
+kubectl delete -k deployment_dev/
 ```
 
 ---
