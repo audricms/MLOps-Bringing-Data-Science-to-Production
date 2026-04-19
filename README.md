@@ -100,7 +100,7 @@ While developing, you can test your code in the cloud using Kubernetes. We use K
 
 ### Configure Your Environment
 
-Before deploying, open the `deployment/kustomization.yaml` file and update it with your personal SSPCloud username:
+Before deploying, open the `deployment_dev/kustomization.yaml` file and update it with your personal SSPCloud username:
 1. Change `namespace: user-vgraillat` to your active namespace.
 2. Update the two Ingress URL hostnames under the `patches:` section to ensure they match your personal URLs.
 
@@ -108,7 +108,7 @@ Before deploying, open the `deployment/kustomization.yaml` file and update it wi
 
 Once configured, deploy the application using the `-k` (Kustomize) flag:
 ```bash
-kubectl apply -k deployment/
+kubectl apply -k deployment_dev/
 ```
 
 ### Monitor
@@ -123,7 +123,7 @@ kubectl logs -l app=rfpop-app -f --tail=200
 
 To remove the application from your cluster:
 ```bash
-kubectl delete -k deployment/
+kubectl delete -k deployment_dev/
 ```
 
 ---
